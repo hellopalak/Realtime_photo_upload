@@ -53,7 +53,7 @@
         <div class="dropzone__icon">📦</div>
         <h2 class="dropzone__title">DROP PHOTOS INTO DISPENSER</h2>
         <p class="dropzone__subtitle">or click to open your device inventory</p>
-        <input type="file" id="multiFileInput" accept="image/*" multiple />
+        <input type="file" id="multiFileInput" accept="image/*,video/*" multiple />
       </div>
 
       <!-- Quick Action Camera Trigger Buttons -->
@@ -63,11 +63,21 @@
           <span>📸</span> SNAP WITH CAMERA
           <input type="file" id="cameraDirectInput" accept="image/*" capture="environment" style="display: none;" />
         </label>
+        <label class="btn btn--primary" style="cursor: pointer;">
+  <span>🎥</span> RECORD VIDEO
+  <input
+    type="file"
+    id="videoDirectInput"
+    accept="video/*"
+    capture="environment"
+    style="display: none;"
+  />
+</label>
 
         <!-- Gallery Multi-Picker Trigger -->
         <label class="btn btn--cyan" style="cursor: pointer;">
           <span>🖼️</span> OPEN INVENTORY
-          <input type="file" id="galleryPickerInput" accept="image/*" multiple style="display: none;" />
+          <input type="file" id="galleryPickerInput" accept="image/*, video/*" multiple style="display: none;" />
         </label>
       </div>
 

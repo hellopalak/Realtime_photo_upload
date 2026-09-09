@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spectator Feed — Tech Unleash 4.0</title>
+  <meta name="description" content="Minecraft spectator live feed. Watch event photos spawn in real time." />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <a href="/" class="brand">
+        <span class="brand__logo">💎</span>
+        <div class="brand__info">
+          <span class="brand__title">SPECTATOR FEED</span>
+          <span class="brand__subtitle">Live Photo Realm</span>
+        </div>
+      </a>
+
+      <div class="top-bar__actions">
+        <span class="live-pill" id="liveStatusPill">
+          <span class="live-pill__dot"></span>
+          LIVE
+        </span>
+
+        <span class="counter-pill" title="Players currently connected">
+          👥 <strong id="guestCounter">1</strong>
+        </span>
+
+        <button class="btn-icon" id="openQrModalBtn" title="Show Event QR Map">
+          🗺️
+        </button>
+
+        <button class="btn-icon" id="fullscreenToggleBtn" title="Toggle Fullscreen">
+          ⛶
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Spotlight for Latest Photo -->
+    <main class="spotlight" id="spotlightCard">
+      <div class="spotlight__header">
+        <div class="spotlight__tag">
+          <span>🔥</span> NEWEST SPAWN
+        </div>
+        <div class="spotlight__meta" id="spotlightMeta">
+          <span id="spotlightTime">Waiting for photographer…</span>
+        </div>
+      </div>
+
+      <!-- Empty State Radar / Spawner -->
+      <div class="empty-radar" id="emptyRadar">
+        <div class="empty-radar__pulse">
+          <span>📦</span>
+        </div>
+        <h2 class="empty-radar__title">WAITING FOR FIRST SHOT</h2>
+        <p class="empty-radar__desc">
+          When the photographer takes a photo, it will instantly render in this frame!
+        </p>
+      </div>
+
+      <!-- Spotlight Image Display -->
+      <div class="spotlight__media-frame" id="spotlightFrame" style="display: none;">
+        <img id="spotlightImg" class="spotlight__img" alt="Latest Event Moment" />
+      </div>
+
+      <div class="spotlight__footer" id="spotlightFooter" style="display: none;">
+        <span style="font-family: var(--font-silk); font-size: 0.8rem; color: var(--mc-text-gray);" id="spotlightFileName">item_photo.png</span>
+        <div style="display: flex; gap: 8px;">
+          <a id="spotlightDownloadBtn" class="btn btn--secondary" download="event-photo.jpg" style="padding: 8px 12px; font-size: 0.65rem;">
+            <span>📥</span> DOWNLOAD
+          </a>
+          <button id="spotlightExpandBtn" class="btn btn--primary" style="padding: 8px 12px; font-size: 0.65rem;">
+            <span>🔍</span> INSPECT
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Event Moments Gallery Grid -->
+    <section class="gallery-section" id="gallerySection">
+      <div class="gallery-section__header">
+        <h2 class="section-title">
+          <span>ITEM FRAME GALLERY</span>
+          <span class="section-badge" id="momentsCountBadge">0</span>
+        </h2>
+        <div style="font-family: var(--font-silk); font-size: 0.75rem; color: var(--mc-emerald);" id="liveSyncNote">
+          ⚡ REDSTONE AUTO-SYNC ACTIVE
+        </div>
+      </div>
+
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Gallery cards populated dynamically -->
+      </div>
+    </section>
+  </div>
+
+  <!-- Realtime Toast Notification (Minecraft Chat style) -->
+  <div class="new-photo-toast" id="newPhotoToast">
+    <img id="toastThumb" class="new-photo-toast__thumb" src="" alt="Thumbnail" />
+    <div>
+      <div class="new-photo-toast__title">&lt;Photographer&gt; New photo dropped!</div>
+      <div class="new-photo-toast__sub">[Click to view spotlight]</div>
+    </div>
+  </div>
+
+  <!-- QR Code Share Modal -->
+  <div class="modal" id="qrModal">
+    <div class="modal__box">
+      <button class="modal__close" id="closeQrModalBtn">X</button>
+      <h3 style="font-family: var(--font-pixel); font-size: 0.95rem; margin-bottom: 8px; color: #000;">
+        EVENT MAP QR
+      </h3>
+      <p style="font-family: var(--font-body); font-size: 0.85rem; color: #444; margin-bottom: 8px;">
+        Share this code with fellow players to open the live feed on mobile!
+      </p>
+      <div class="qr-display-box">
+        <img id="modalQrImg" src="/api/qr" alt="Event QR Code" />
+      </div>
+      <div>
+        <button class="btn btn--primary" id="copyShareLinkBtn" style="width: 100%;">
+          <span>📋</span> COPY FEED URL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Modal for Full-res Preview -->
+  <div class="lightbox" id="lightboxModal">
+    <button class="modal__close" id="closeLightboxBtn" style="position: absolute; top: 16px; right: 16px; font-size: 1rem; color: #000; background: #fff; padding: 4px 10px;">X</button>
+    <img id="lightboxImg" class="lightbox__img" alt="Zoomed View" />
+    <div class="lightbox__bar">
+      <a id="lightboxDownloadBtn" class="btn btn--cyan" download="event-photo.jpg">
+        <span>📥</span> DOWNLOAD ORIGINAL
+      </a>
+    </div>
+  </div>
+
+  <!-- Socket.IO & Client Logic -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/guest.js"></script>
+</body>
+</html>

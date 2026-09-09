@@ -1,0 +1,28 @@
+{
+  "name": "realtime-photo-sharing",
+  "version": "1.0.0",
+  "description": "Realtime Event Photo Sharing System — upload photos to Google Drive and display them live to guests via QR code.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "authorize": "node scripts/authorize.js",
+    "generate-qr": "node scripts/generateQR.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "googleapis": "^140.0.1",
+    "multer": "^1.4.5-lts.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.5"
+  },
+  "keywords": [
+    "photo-sharing",
+    "realtime",
+    "google-drive",
+    "socket.io",
+    "event"
+  ],
+  "license": "MIT"
+}

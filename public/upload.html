@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capture Station — Tech Unleash 4.0</title>
+  <meta name="description" content="Minecraft capture station. Snap and broadcast event photos instantly to all players." />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="top-bar">
+      <a href="/" class="brand">
+        <span class="brand__logo">📸</span>
+        <div class="brand__info">
+          <span class="brand__title">CAPTURE STATION</span>
+          <span class="brand__subtitle">Craft &amp; Broadcast</span>
+        </div>
+      </a>
+
+      <div class="top-bar__actions">
+        <a href="/guest.html" class="btn btn--secondary" style="padding: 8px 12px; font-size: 0.65rem;" target="_blank">
+          <span>👀</span> SPECTATOR FEED
+        </a>
+        <button class="btn-icon" id="openQrBtn" title="Event QR Map">
+          🗺️
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Dashboard Bar -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__label">XP / Photos Snapped</div>
+        <div class="stat-card__val" id="uploadedCountStat">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Online Spectators</div>
+        <div class="stat-card__val" id="activeGuestsStat">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Storage Realm</div>
+        <div class="stat-card__val" id="storageStatusStat" style="font-size: 0.95rem; margin-top: 8px;">
+          Checking…
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Dock -->
+    <section class="upload-card">
+      <div class="dropzone" id="dropzoneArea">
+        <div class="dropzone__icon">📦</div>
+        <h2 class="dropzone__title">DROP PHOTOS INTO DISPENSER</h2>
+        <p class="dropzone__subtitle">or click to open your device inventory</p>
+        <input type="file" id="multiFileInput" accept="image/*" multiple />
+      </div>
+
+      <!-- Quick Action Camera Trigger Buttons -->
+      <div class="camera-action-bar">
+        <!-- Direct Camera Trigger -->
+        <label class="btn btn--primary" style="cursor: pointer;">
+          <span>📸</span> SNAP WITH CAMERA
+          <input type="file" id="cameraDirectInput" accept="image/*" capture="environment" style="display: none;" />
+        </label>
+
+        <!-- Gallery Multi-Picker Trigger -->
+        <label class="btn btn--cyan" style="cursor: pointer;">
+          <span>🖼️</span> OPEN INVENTORY
+          <input type="file" id="galleryPickerInput" accept="image/*" multiple style="display: none;" />
+        </label>
+      </div>
+
+      <!-- Upload Queue & Status -->
+      <div class="upload-queue" id="uploadQueue" style="display: none;">
+        <div class="upload-queue__title">DISPENSER ACTIVITY</div>
+        <div id="queueList"></div>
+      </div>
+    </section>
+
+    <!-- Uploaded Photos This Session Gallery -->
+    <section class="gallery-section">
+      <div class="gallery-section__header">
+        <h2 class="section-title">
+          <span>CHEST INVENTORY</span>
+          <span class="section-badge" id="sessionCountBadge">0</span>
+        </h2>
+        <span style="font-family: var(--font-silk); font-size: 0.75rem; color: var(--mc-text-gray);">
+          Broadcasting live to spectators
+        </span>
+      </div>
+
+      <div class="gallery-grid" id="photographerGalleryGrid">
+        <!-- Photo cards rendered dynamically -->
+      </div>
+    </section>
+  </div>
+
+  <!-- QR Share Modal -->
+  <div class="modal" id="qrModal">
+    <div class="modal__box">
+      <button class="modal__close" id="closeQrModalBtn">X</button>
+      <h3 style="font-family: var(--font-pixel); font-size: 0.95rem; margin-bottom: 8px; color: #000;">
+        SPECTATOR JOIN QR
+      </h3>
+      <p style="font-family: var(--font-body); font-size: 0.85rem; color: #444; margin-bottom: 12px;">
+        Scan this map with your phone camera to watch shots in real time:
+      </p>
+      <div class="qr-display-box">
+        <img id="modalQrImg" src="/api/qr" alt="Event QR Code" />
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn--primary" id="copyGuestUrlBtn" style="flex: 1; font-size: 0.65rem;">
+          <span>📋</span> COPY URL
+        </button>
+        <a href="/guest.html" class="btn btn--secondary" target="_blank" style="flex: 1; font-size: 0.65rem;">
+          <span>🚀</span> OPEN FEED
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/upload.js"></script>
+</body>
+</html>

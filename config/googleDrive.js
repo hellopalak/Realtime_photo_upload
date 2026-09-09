@@ -10,7 +10,7 @@ const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 let REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN;
-const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || path.join(__dirname, '..', 'service-account-key.json');
+const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_PATH || path.join(__dirname, '..', 'key.json');
 
 /**
  * Initialize Google Drive Client safely
@@ -30,8 +30,8 @@ function initializeDrive() {
 
     // 2. Try Service Account JSON key if present
     const resolvedKeyPath = path.isAbsolute(SERVICE_ACCOUNT_PATH)
-      ? SERVICE_ACCOUNT_PATH
-      : path.join(__dirname, '..', SERVICE_ACCOUNT_PATH);
+  ? SERVICE_ACCOUNT_PATH
+  : path.resolve(process.cwd(), SERVICE_ACCOUNT_PATH);
 
     if (fs.existsSync(resolvedKeyPath)) {
       const auth = new google.auth.GoogleAuth({

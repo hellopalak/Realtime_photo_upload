@@ -23,7 +23,7 @@ Upload event photos in real time to Google Drive and display them live to guests
 4. Go to **APIs & Services → Credentials → Create Credentials → Service Account**.
 5. Give the service account a name (e.g. `photo-uploader`), click **Done**.
 6. Click on the newly created service account → **Keys** tab → **Add Key → Create new key → JSON**.
-7. Download the JSON key file and save it in the project root as `service-account-key.json`.
+7. Download the JSON key file and save it in the project root as `key.json`.
 
 ### 2. Share the Drive Folder with the Service Account
 
@@ -57,7 +57,7 @@ Edit `.env` and fill in:
 |---|---|
 | `PORT` | `3000` (or any free port) |
 | `GOOGLE_DRIVE_FOLDER_ID` | Your folder ID from step 3 |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | `./service-account-key.json` |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | `./key.json` |
 | `PUBLIC_APP_URL` | `http://localhost:3000` (or your ngrok / deployed URL) |
 
 ### 5. Install Dependencies

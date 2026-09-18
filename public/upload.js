@@ -230,12 +230,28 @@
   // -------------------------------------------------------------------------
   // File Upload Processing
   // -------------------------------------------------------------------------
+  function isMediaFile(file) {
+    // Check MIME type first
+    if (file.type && (file.type.startsWith('image/') || file.type.startsWith('video/'))) {
+      return true;
+    }
+    // Fallback: check extension (mobile browsers sometimes have empty/wrong MIME)
+    const ext = (file.name || '').split('.').pop().toLowerCase();
+    const mediaExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif', 'bmp',
+                       'mp4', 'mov', 'avi', 'webm', 'mkv', '3gp', '3gpp', 'flv', 'm4v'];
+    return mediaExts.includes(ext);
+  }
+
   function handleFilesSelected(fileList) {
     if (!fileList || fileList.length === 0) return;
     uploadQueue.style.display = 'block';
 
     Array.from(fileList).forEach((file) => {
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+      console.log(`📁 File selected: ${file.name}, type: "${file.type}", size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      if (!isMediaFile(file)) {
+        console.warn(`⚠️ Skipped non-media file: ${file.name} (type: ${file.type})`);
+        return;
+      }
       uploadSingleFile(file);
     });
   }
@@ -244,7 +260,7 @@
     const queueItem = document.createElement('div');
     queueItem.className = 'queue-item';
 
-    const isVideo = file.type.startsWith('video/');
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|avi|webm|mkv|3gp|3gpp|flv|m4v)$/i.test(file.name);
     let thumb;
     if (isVideo) {
       thumb = document.createElement('video');

@@ -28,20 +28,43 @@ const ALLOWED_MIME_TYPES = [
   'image/jpg',
   'image/png',
   'image/heic',
+  'image/heif',
   'image/webp',
   'image/gif',
+  'image/bmp',
   'video/mp4',
+  'video/quicktime',   // iOS .mov
+  'video/3gpp',        // Android 3gp
+  'video/3gpp2',
+  'video/webm',
+  'video/x-matroska',  // mkv
+  'video/x-msvideo',   // avi
+  'video/x-m4v',       // m4v
   'audio/mpeg',
   'audio/mp3',
 ];
 
+// Allowed extensions as fallback when MIME type is missing or generic
+const ALLOWED_EXTENSIONS = [
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif', '.bmp',
+  '.mp4', '.mov', '.avi', '.webm', '.mkv', '.3gp', '.3gpp', '.flv', '.m4v',
+  '.mp3', '.mpeg',
+];
+
 const fileFilter = (_req, file, cb) => {
-  if (ALLOWED_MIME_TYPES.includes(file.mimetype.toLowerCase()) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/')) {
+  const mime = (file.mimetype || '').toLowerCase();
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (ALLOWED_MIME_TYPES.includes(mime)
+    || mime.startsWith('image/')
+    || mime.startsWith('video/')
+    || mime.startsWith('audio/')
+    || ALLOWED_EXTENSIONS.includes(ext)) {
     cb(null, true);
   } else {
     cb(
       new Error(
-        `Invalid file type "${file.mimetype}". Only image (JPG, PNG, WEBP, HEIC), video (MP4), and audio (MP3) files are allowed.`
+        `Invalid file type "${file.mimetype}" (${ext}). Supported: images, videos (MP4, MOV, WebM), and audio.`
       ),
       false
     );

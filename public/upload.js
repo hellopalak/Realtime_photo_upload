@@ -5,6 +5,7 @@
   const dropzoneArea = document.getElementById('dropzoneArea');
   const multiFileInput = document.getElementById('multiFileInput');
   const cameraDirectInput = document.getElementById('cameraDirectInput');
+  const videoDirectInput = document.getElementById('videoDirectInput');
   const galleryPickerInput = document.getElementById('galleryPickerInput');
 
   const uploadedCountStat = document.getElementById('uploadedCountStat');
@@ -22,7 +23,32 @@
   const copyGuestUrlBtn = document.getElementById('copyGuestUrlBtn');
   const modalQrImg = document.getElementById('modalQrImg');
 
+  // Camera modal elements
+  const snapCameraBtn = document.getElementById('snapCameraBtn');
+  const recordVideoBtn = document.getElementById('recordVideoBtn');
+  const cameraModal = document.getElementById('cameraModal');
+  const closeCameraModalBtn = document.getElementById('closeCameraModalBtn');
+  const cameraPreview = document.getElementById('cameraPreview');
+  const flipCameraBtn = document.getElementById('flipCameraBtn');
+  const shutterBtn = document.getElementById('shutterBtn');
+  const recordBtn = document.getElementById('recordBtn');
+  const recordBtnInner = document.getElementById('recordBtnInner');
+  const snapshotCanvas = document.getElementById('snapshotCanvas');
+  const cameraModalTitle = document.getElementById('cameraModalTitle');
+  const recIndicator = document.getElementById('recIndicator');
+  const recTimer = document.getElementById('recTimer');
+
   let sessionPhotos = [];
+
+  // Camera state
+  let cameraStream = null;
+  let currentFacingMode = 'user'; // 'user' (front) or 'environment' (back)
+  let cameraMode = 'photo'; // 'photo' or 'video'
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let isRecording = false;
+  let recordStartTime = null;
+  let recTimerInterval = null;
 
   // -------------------------------------------------------------------------
   // Synthesized Minecraft Pop sound on upload
@@ -49,6 +75,40 @@
       osc.start(now);
       osc.stop(now + 0.12);
     } catch (e) {}
+  }
+
+  // Shutter click sound
+  function playShutterSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const now = ctx.currentTime;
+
+      // White noise burst for shutter click
+      const bufferSize = ctx.sampleRate * 0.06;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+      source.connect(gain);
+      gain.connect(ctx.destination);
+      source.start(now);
+    } catch (e) {}
+  }
+
+  // -------------------------------------------------------------------------
+  // Detect if device is mobile (for fallback to native capture)
+  // -------------------------------------------------------------------------
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      || ('ontouchstart' in window && navigator.maxTouchPoints > 2);
   }
 
   // -------------------------------------------------------------------------
@@ -100,10 +160,32 @@
       card.className = 'gallery-card';
       card.id = `photocard_${photo.id}`;
 
-      const img = document.createElement('img');
-      img.className = 'gallery-card__img';
-      img.src = photo.url;
-      img.alt = photo.originalName || 'Photo';
+      const isVideo = photo.mimeType && photo.mimeType.startsWith('video/');
+
+      if (isVideo) {
+        const video = document.createElement('video');
+        video.className = 'gallery-card__img';
+        video.src = photo.url;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.addEventListener('mouseenter', () => video.play());
+        video.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+        card.appendChild(video);
+
+        // Video badge
+        const badge = document.createElement('div');
+        badge.className = 'video-badge';
+        badge.textContent = '🎥 VIDEO';
+        card.appendChild(badge);
+      } else {
+        const img = document.createElement('img');
+        img.className = 'gallery-card__img';
+        img.src = photo.url;
+        img.alt = photo.originalName || 'Photo';
+        card.appendChild(img);
+      }
 
       const overlay = document.createElement('div');
       overlay.className = 'gallery-card__overlay';
@@ -120,7 +202,7 @@
       deleteBtn.style.cssText = 'background:#aa0000;border:2px solid #000;padding:3px 6px;cursor:pointer;color:#fff;font-size:0.75rem;';
       deleteBtn.onclick = function (e) {
         e.stopPropagation();
-        if (confirm('Delete this photo from the live spectator feed?')) {
+        if (confirm('Delete this from the live spectator feed?')) {
           deletePhoto(photo.id);
         }
       };
@@ -128,7 +210,6 @@
       overlay.appendChild(time);
       overlay.appendChild(deleteBtn);
 
-      card.appendChild(img);
       card.appendChild(overlay);
       photographerGalleryGrid.appendChild(card);
     });
@@ -154,7 +235,7 @@
     uploadQueue.style.display = 'block';
 
     Array.from(fileList).forEach((file) => {
-      if (!file.type.startsWith('image/')) return;
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
       uploadSingleFile(file);
     });
   }
@@ -163,9 +244,20 @@
     const queueItem = document.createElement('div');
     queueItem.className = 'queue-item';
 
-    const thumb = document.createElement('img');
-    thumb.className = 'queue-item__thumb';
-    thumb.src = URL.createObjectURL(file);
+    const isVideo = file.type.startsWith('video/');
+    let thumb;
+    if (isVideo) {
+      thumb = document.createElement('video');
+      thumb.className = 'queue-item__thumb';
+      thumb.src = URL.createObjectURL(file);
+      thumb.muted = true;
+      thumb.playsInline = true;
+      thumb.preload = 'metadata';
+    } else {
+      thumb = document.createElement('img');
+      thumb.className = 'queue-item__thumb';
+      thumb.src = URL.createObjectURL(file);
+    }
 
     const details = document.createElement('div');
     details.className = 'queue-item__details';
@@ -215,7 +307,226 @@
   }
 
   // -------------------------------------------------------------------------
-  // Event Listeners for inputs
+  // Live Camera (getUserMedia) — Photo Snap & Video Recording
+  // -------------------------------------------------------------------------
+  async function openCamera(mode) {
+    cameraMode = mode;
+
+    // On mobile, just trigger native capture input as a fallback
+    if (isMobileDevice()) {
+      if (mode === 'photo') {
+        cameraDirectInput.click();
+      } else {
+        videoDirectInput.click();
+      }
+      return;
+    }
+
+    // Desktop: open getUserMedia viewfinder
+    try {
+      await startCameraStream();
+    } catch (err) {
+      console.error('Camera access failed:', err);
+      alert('Could not access your camera. Please ensure camera permissions are granted.\n\nError: ' + err.message);
+      return;
+    }
+
+    // Configure UI for mode
+    if (mode === 'photo') {
+      cameraModalTitle.textContent = '📸 LIVE VIEWFINDER';
+      shutterBtn.style.display = '';
+      recordBtn.style.display = 'none';
+    } else {
+      cameraModalTitle.textContent = '🎥 VIDEO RECORDER';
+      shutterBtn.style.display = 'none';
+      recordBtn.style.display = '';
+      resetRecordButton();
+    }
+
+    cameraModal.classList.add('active');
+  }
+
+  async function startCameraStream() {
+    // Stop any existing stream
+    stopCameraStream();
+
+    const constraints = {
+      video: {
+        facingMode: currentFacingMode,
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+      audio: cameraMode === 'video', // audio only for video recording
+    };
+
+    cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+    cameraPreview.srcObject = cameraStream;
+    await cameraPreview.play();
+  }
+
+  function stopCameraStream() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      cameraStream = null;
+    }
+    cameraPreview.srcObject = null;
+  }
+
+  function closeCamera() {
+    // Stop any ongoing recording
+    if (isRecording && mediaRecorder) {
+      mediaRecorder.stop();
+      isRecording = false;
+    }
+    clearInterval(recTimerInterval);
+    recIndicator.style.display = 'none';
+    stopCameraStream();
+    cameraModal.classList.remove('active');
+  }
+
+  // Flip front/back camera
+  async function flipCamera() {
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    try {
+      await startCameraStream();
+    } catch (err) {
+      // If back camera doesn't exist, flip back
+      currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+      console.warn('Could not flip camera:', err.message);
+    }
+  }
+
+  // Take a photo snapshot from the live stream
+  function takeSnapshot() {
+    if (!cameraStream) return;
+
+    const videoTrack = cameraStream.getVideoTracks()[0];
+    const settings = videoTrack.getSettings();
+    const w = settings.width || cameraPreview.videoWidth;
+    const h = settings.height || cameraPreview.videoHeight;
+
+    snapshotCanvas.width = w;
+    snapshotCanvas.height = h;
+    const ctx = snapshotCanvas.getContext('2d');
+    ctx.drawImage(cameraPreview, 0, 0, w, h);
+
+    // Flash effect
+    cameraPreview.style.filter = 'brightness(3)';
+    setTimeout(() => { cameraPreview.style.filter = ''; }, 120);
+
+    playShutterSound();
+
+    snapshotCanvas.toBlob(function (blob) {
+      if (!blob) return;
+      const file = new File([blob], `camera_snap_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      handleFilesSelected([file]);
+      closeCamera();
+    }, 'image/jpeg', 0.92);
+  }
+
+  // Start/stop video recording
+  function toggleRecording() {
+    if (!isRecording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
+  }
+
+  function startRecording() {
+    if (!cameraStream) return;
+
+    recordedChunks = [];
+
+    // Find a supported MIME type
+    const mimeTypes = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
+    let mimeType = '';
+    for (const mt of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mt)) {
+        mimeType = mt;
+        break;
+      }
+    }
+
+    try {
+      mediaRecorder = new MediaRecorder(cameraStream, mimeType ? { mimeType } : {});
+    } catch (err) {
+      alert('Video recording is not supported in this browser.');
+      return;
+    }
+
+    mediaRecorder.ondataavailable = function (e) {
+      if (e.data && e.data.size > 0) {
+        recordedChunks.push(e.data);
+      }
+    };
+
+    mediaRecorder.onstop = function () {
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+      const ext = (mediaRecorder.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+      const file = new File([blob], `camera_video_${Date.now()}.${ext}`, { type: blob.type });
+      handleFilesSelected([file]);
+      closeCamera();
+    };
+
+    mediaRecorder.start(100); // collect data every 100ms
+    isRecording = true;
+
+    // Update UI
+    recordBtnInner.classList.add('recording');
+    recordBtn.title = 'Stop Recording';
+    recIndicator.style.display = 'flex';
+    recordStartTime = Date.now();
+    recTimer.textContent = '00:00';
+    recTimerInterval = setInterval(updateRecTimer, 1000);
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    isRecording = false;
+    clearInterval(recTimerInterval);
+    recIndicator.style.display = 'none';
+    resetRecordButton();
+  }
+
+  function resetRecordButton() {
+    recordBtnInner.classList.remove('recording');
+    recordBtn.title = 'Start Recording';
+  }
+
+  function updateRecTimer() {
+    if (!recordStartTime) return;
+    const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+    const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const secs = String(elapsed % 60).padStart(2, '0');
+    recTimer.textContent = `${mins}:${secs}`;
+  }
+
+  // -------------------------------------------------------------------------
+  // Camera button event listeners
+  // -------------------------------------------------------------------------
+  snapCameraBtn.addEventListener('click', function () {
+    openCamera('photo');
+  });
+
+  recordVideoBtn.addEventListener('click', function () {
+    openCamera('video');
+  });
+
+  closeCameraModalBtn.addEventListener('click', closeCamera);
+
+  cameraModal.addEventListener('click', function (e) {
+    if (e.target === cameraModal) closeCamera();
+  });
+
+  flipCameraBtn.addEventListener('click', flipCamera);
+  shutterBtn.addEventListener('click', takeSnapshot);
+  recordBtn.addEventListener('click', toggleRecording);
+
+  // -------------------------------------------------------------------------
+  // Event Listeners for file inputs (mobile fallback + gallery + dropzone)
   // -------------------------------------------------------------------------
   multiFileInput.addEventListener('change', function () {
     handleFilesSelected(multiFileInput.files);
@@ -225,6 +536,11 @@
   cameraDirectInput.addEventListener('change', function () {
     handleFilesSelected(cameraDirectInput.files);
     cameraDirectInput.value = '';
+  });
+
+  videoDirectInput.addEventListener('change', function () {
+    handleFilesSelected(videoDirectInput.files);
+    videoDirectInput.value = '';
   });
 
   galleryPickerInput.addEventListener('change', function () {

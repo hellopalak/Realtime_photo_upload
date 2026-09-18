@@ -18,7 +18,8 @@ const storage = multer.diskStorage({
     const timestamp = Date.now();
     const random = Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, `photo_${timestamp}_${random}${ext}`);
+    const prefix = file.mimetype.startsWith('video/') ? 'video' : 'photo';
+    cb(null, `${prefix}_${timestamp}_${random}${ext}`);
   },
 });
 
@@ -50,7 +51,7 @@ const fileFilter = (_req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB max
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB max (videos need more)
 });
 
 // ---------------------------------------------------------------------------
@@ -65,7 +66,7 @@ router.post('/upload', (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: 'No image file provided. Send a file with the field name "photo".',
+        error: 'No file provided. Send an image or video with the field name "photo".',
       });
     }
 
@@ -116,7 +117,7 @@ router.post('/upload', (req, res) => {
       return res.status(200).json({
         success: true,
         photo: photoRecord,
-        message: 'Photo uploaded successfully and broadcast to guests!',
+        message: 'Media uploaded successfully and broadcast to guests!',
       });
     } catch (err) {
       console.error('Upload processing error:', err.message);

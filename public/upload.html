@@ -56,30 +56,25 @@
         <input type="file" id="multiFileInput" accept="image/*,video/*" multiple />
       </div>
 
-      <!-- Quick Action Camera Trigger Buttons -->
+      <!-- Quick Action Buttons -->
       <div class="camera-action-bar">
-        <!-- Direct Camera Trigger -->
-        <label class="btn btn--primary" style="cursor: pointer;">
+        <!-- Live Camera (uses getUserMedia on desktop, falls back to capture on mobile) -->
+        <button class="btn btn--primary" id="snapCameraBtn" type="button">
           <span>📸</span> SNAP WITH CAMERA
-          <input type="file" id="cameraDirectInput" accept="image/*" capture="environment" style="display: none;" />
-        </label>
-        <label class="btn btn--primary" style="cursor: pointer;">
-  <span>🎥</span> RECORD VIDEO
-  <input
-    type="file"
-    id="videoDirectInput"
-    accept="video/*"
-    capture="environment"
-    style="display: none;"
-  />
-</label>
-
-        <!-- Gallery Multi-Picker Trigger -->
+        </button>
+        <button class="btn btn--primary" id="recordVideoBtn" type="button">
+          <span>🎥</span> RECORD VIDEO
+        </button>
+        <!-- Gallery Multi-Picker -->
         <label class="btn btn--cyan" style="cursor: pointer;">
           <span>🖼️</span> OPEN INVENTORY
           <input type="file" id="galleryPickerInput" accept="image/*, video/*" multiple style="display: none;" />
         </label>
       </div>
+
+      <!-- Hidden file inputs for mobile fallback -->
+      <input type="file" id="cameraDirectInput" accept="image/*" capture="environment" style="display: none;" />
+      <input type="file" id="videoDirectInput" accept="video/*" capture="environment" style="display: none;" />
 
       <!-- Upload Queue & Status -->
       <div class="upload-queue" id="uploadQueue" style="display: none;">
@@ -127,6 +122,44 @@
           <span>🚀</span> OPEN FEED
         </a>
       </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Modal -->
+  <div class="modal" id="cameraModal">
+    <div class="camera-modal__box">
+      <button class="modal__close" id="closeCameraModalBtn">X</button>
+
+      <div class="camera-modal__header">
+        <span class="camera-modal__title" id="cameraModalTitle">📸 LIVE VIEWFINDER</span>
+        <button class="btn-icon" id="flipCameraBtn" title="Flip Camera" style="width: 36px; height: 36px; font-size: 0.9rem;">
+          🔄
+        </button>
+      </div>
+
+      <div class="camera-modal__viewfinder">
+        <video id="cameraPreview" autoplay playsinline muted></video>
+        <div class="camera-modal__crosshair"></div>
+        <!-- Recording indicator -->
+        <div class="camera-modal__rec-indicator" id="recIndicator" style="display: none;">
+          <span class="rec-dot"></span>
+          <span id="recTimer">00:00</span>
+        </div>
+      </div>
+
+      <div class="camera-modal__controls">
+        <!-- Photo mode: single snap button -->
+        <button class="camera-modal__shutter" id="shutterBtn" title="Take Photo">
+          <div class="shutter-inner"></div>
+        </button>
+        <!-- Video mode: record/stop button -->
+        <button class="camera-modal__shutter camera-modal__shutter--record" id="recordBtn" title="Start Recording" style="display: none;">
+          <div class="shutter-inner shutter-inner--record" id="recordBtnInner"></div>
+        </button>
+      </div>
+
+      <!-- Canvas for capturing snapshots (hidden) -->
+      <canvas id="snapshotCanvas" style="display: none;"></canvas>
     </div>
   </div>
 
